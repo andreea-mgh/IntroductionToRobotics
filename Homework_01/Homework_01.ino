@@ -31,11 +31,8 @@ void setup() {
 
 void loop() {
   unsigned short redValue   = 0;
-  delay(10);
   unsigned short greenValue = 0;
-  delay(10);
   unsigned short blueValue  = 0;
-  delay(10);
 
   for(int i=0; i<sampleRate; i++) {
     redValue   += analogRead(redInput);
