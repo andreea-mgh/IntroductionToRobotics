@@ -13,8 +13,6 @@
 #define AnalogReadResolution  1023
 #define AnalogWriteResolution 255
 
-const unsigned short sampleRate = 10;
-
 
 
 void setup() {
@@ -26,38 +24,34 @@ void setup() {
   pinMode(greenLED, OUTPUT);
   pinMode(blueLED,  OUTPUT);
 
-  // Serial.begin(9600);
+  Serial.begin(9600);
 }
 
 void loop() {
-  unsigned short redValue   = 0;
+  unsigned short redValue   = analogRead(redInput);
   delay(10);
-  unsigned short greenValue = 0;
+  unsigned short greenValue = analogRead(greenInput);
   delay(10);
-  unsigned short blueValue  = 0;
+  unsigned short blueValue  = analogRead(blueInput);
   delay(10);
 
-  for(int i=0; i<sampleRate; i++) {
-    redValue   += analogRead(redInput);
-    greenValue += analogRead(greenInput);
-    blueValue  += analogRead(blueInput);
-  }
+  if(redValue   < 16) redValue   = 0;
+  if(greenValue < 16) greenValue = 0;
+  if(blueValue  < 16) blueValue  = 0;
 
-  redValue   /= sampleRate;
-  greenValue /= sampleRate;
-  blueValue  /= sampleRate;
-
-  // Serial.print(redValue);
+  // Serial.print(map(redValue,   0, AnalogReadResolution, 0, AnalogWriteResolution));
   // Serial.print(" ");
-  // Serial.print(greenValue);
+  // Serial.print(map(greenValue, 0, AnalogReadResolution, 0, AnalogWriteResolution));
   // Serial.print(" ");
-  // Serial.println(blueValue);
+  // Serial.println(map(blueValue,  0, AnalogReadResolution, 0, AnalogWriteResolution));
 
-  redValue =   map(redValue,   0, AnalogReadResolution, 0, AnalogWriteResolution) * redCC;
+  redValue   = map(redValue,   0, AnalogReadResolution, 0, AnalogWriteResolution) * redCC;
   greenValue = map(greenValue, 0, AnalogReadResolution, 0, AnalogWriteResolution) * greenCC;
-  blueValue =  map(blueValue,  0, AnalogReadResolution, 0, AnalogWriteResolution) * blueCC;
+  blueValue  = map(blueValue,  0, AnalogReadResolution, 0, AnalogWriteResolution) * blueCC;
 
-  analogWrite(redLED, redValue);
+
+
+  analogWrite(redLED,   redValue);
   analogWrite(greenLED, greenValue);
-  analogWrite(blueLED, blueValue);
+  analogWrite(blueLED,  blueValue);
 }
