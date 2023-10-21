@@ -28,12 +28,18 @@ void setup() {
 }
 
 void loop() {
+<<<<<<< HEAD
   unsigned short redValue   = analogRead(redInput);
   delay(10);
   unsigned short greenValue = analogRead(greenInput);
   delay(10);
   unsigned short blueValue  = analogRead(blueInput);
   delay(10);
+=======
+  unsigned short redValue   = 0;
+  unsigned short greenValue = 0;
+  unsigned short blueValue  = 0;
+>>>>>>> 3e4628bae89ba85b35b4e8ce0c3ef8d6349fe716
 
   if(redValue   < 32) redValue   = 0;
   if(greenValue < 32) greenValue = 0;
