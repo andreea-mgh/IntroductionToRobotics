@@ -35,9 +35,9 @@ void loop() {
   unsigned short blueValue  = analogRead(blueInput);
   delay(10);
 
-  if(redValue   < 16) redValue   = 0;
-  if(greenValue < 16) greenValue = 0;
-  if(blueValue  < 16) blueValue  = 0;
+  if(redValue   < 32) redValue   = 0;
+  if(greenValue < 32) greenValue = 0;
+  if(blueValue  < 32) blueValue  = 0;
 
   // Serial.print(map(redValue,   0, AnalogReadResolution, 0, AnalogWriteResolution));
   // Serial.print(" ");
