@@ -13,6 +13,8 @@
 #define AnalogReadResolution  1023
 #define AnalogWriteResolution 255
 
+#define readThreshold 32
+
 
 
 void setup() {
@@ -23,40 +25,28 @@ void setup() {
   pinMode(redLED,   OUTPUT);
   pinMode(greenLED, OUTPUT);
   pinMode(blueLED,  OUTPUT);
-
-  Serial.begin(9600);
 }
 
 void loop() {
-<<<<<<< HEAD
+  // read values from input pins
   unsigned short redValue   = analogRead(redInput);
   delay(10);
   unsigned short greenValue = analogRead(greenInput);
   delay(10);
   unsigned short blueValue  = analogRead(blueInput);
   delay(10);
-=======
-  unsigned short redValue   = 0;
-  unsigned short greenValue = 0;
-  unsigned short blueValue  = 0;
->>>>>>> 3e4628bae89ba85b35b4e8ce0c3ef8d6349fe716
 
-  if(redValue   < 32) redValue   = 0;
-  if(greenValue < 32) greenValue = 0;
-  if(blueValue  < 32) blueValue  = 0;
+  // discard noise in the lower range
+  if(redValue   < readThreshold) redValue   = 0;
+  if(greenValue < readThreshold) greenValue = 0;
+  if(blueValue  < readThreshold) blueValue  = 0;
 
-  // Serial.print(map(redValue,   0, AnalogReadResolution, 0, AnalogWriteResolution));
-  // Serial.print(" ");
-  // Serial.print(map(greenValue, 0, AnalogReadResolution, 0, AnalogWriteResolution));
-  // Serial.print(" ");
-  // Serial.println(map(blueValue,  0, AnalogReadResolution, 0, AnalogWriteResolution));
-
+  // map values and add color correction
   redValue   = map(redValue,   0, AnalogReadResolution, 0, AnalogWriteResolution) * redCC;
   greenValue = map(greenValue, 0, AnalogReadResolution, 0, AnalogWriteResolution) * greenCC;
   blueValue  = map(blueValue,  0, AnalogReadResolution, 0, AnalogWriteResolution) * blueCC;
 
-
-
+  // write values to output pins 
   analogWrite(redLED,   redValue);
   analogWrite(greenLED, greenValue);
   analogWrite(blueLED,  blueValue);
