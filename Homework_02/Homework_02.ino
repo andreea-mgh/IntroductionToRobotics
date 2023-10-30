@@ -1,98 +1,50 @@
-const int floors = 3;
-const int buttonPins[floors] = { 2, 4, 6 };
-const int LEDPins[floors] = { 3, 5, 7 };
-const int buzzerPin = 10;
-const int stateLEDPin = 11;
+#define redInput   A0
+#define greenInput A1
+#define blueInput  A2
 
-unsigned int currentFloor = 0;
-unsigned int targetFloor = 0;
-bool elevatorMoving = false;
+#define redLED   11
+#define greenLED 10
+#define blueLED  9
 
-byte reading[floors];
-byte lastReading[floors];
-byte buttonState[floors];
+#define redCC   1
+#define greenCC 0.2
+#define blueCC  0.3
 
-unsigned long lastDebounceTime[floors];
-unsigned long debounceDelay = 50;
-unsigned long lastFloorTime = 0;
-const int floorDelay = 1000;
+#define AnalogReadResolution  1023
+#define AnalogWriteResolution 255
+
+#define readThreshold 32
 
 
 
 void setup() {
-  for (int i = 0; i < floors; i++) {
-    pinMode(buttonPins[i], INPUT_PULLUP);
-    pinMode(LEDPins[i], OUTPUT);
-    reading[i] = HIGH;
-    lastReading[i] = HIGH;
-    buttonState[i] = HIGH;
+  pinMode(redInput,   INPUT);
+  pinMode(greenInput, INPUT);
+  pinMode(blueInput,  INPUT);
 
-    lastDebounceTime[i] = 0;
-  }
-
-  Serial.begin(9600);
+  pinMode(redLED,   OUTPUT);
+  pinMode(greenLED, OUTPUT);
+  pinMode(blueLED,  OUTPUT);
 }
 
-
 void loop() {
-  for (int i = 0; i < floors; i++) {
-    reading[i] = digitalRead(buttonPins[i]);
+  // read values from input pins
+  unsigned short redValue   = analogRead(redInput);
+  unsigned short greenValue = analogRead(greenInput);
+  unsigned short blueValue  = analogRead(blueInput);
 
-    if (reading[i] != lastReading[i]) {
-      lastDebounceTime[i] = millis();
-    }
+  // discard noise in the lower range
+  if(redValue   < readThreshold) redValue   = 0;
+  if(greenValue < readThreshold) greenValue = 0;
+  if(blueValue  < readThreshold) blueValue  = 0;
 
-    if ((millis() - lastDebounceTime[i]) > debounceDelay) {
-      if (reading[i] != buttonState[i]) {
-        buttonState[i] = reading[i];
-        if (buttonState[i] == HIGH && i != currentFloor) {
-          // button i was pressed
-          targetFloor = i;
-          elevatorMoving = true;
-          lastFloorTime = millis();
-        }
-      }
-    }
-    lastReading[i] = reading[i];
-  }
+  // map values and add color correction
+  redValue   = map(redValue,   0, AnalogReadResolution, 0, AnalogWriteResolution) * redCC;
+  greenValue = map(greenValue, 0, AnalogReadResolution, 0, AnalogWriteResolution) * greenCC;
+  blueValue  = map(blueValue,  0, AnalogReadResolution, 0, AnalogWriteResolution) * blueCC;
 
-
-  if (elevatorMoving) {
-    if (currentFloor == targetFloor) {
-      elevatorMoving = false;
-      tone(buzzerPin, 440, 200);
-      delay(200);
-      tone(buzzerPin, 392, 400);
-    }
-    
-    // move elevator
-    else if(millis() - lastFloorTime > floorDelay) {
-      lastFloorTime = millis();
-      if (currentFloor > targetFloor) currentFloor--;
-      else currentFloor++;
-    }
-
-    if (millis() % 500 < 250) digitalWrite(stateLEDPin, HIGH);
-    else digitalWrite(stateLEDPin, LOW);
-
-  }
-
-  else {
-    digitalWrite(stateLEDPin, LOW);
-  }
-
-  for(int i=0; i<floors; i++) {
-    if(i != currentFloor) digitalWrite(LEDPins[i], LOW);
-    else digitalWrite(LEDPins[i], HIGH);
-  }
-
-  // buttons pressed deboog
-  // for (int i = 0; i < floors; i++) {
-  //   Serial.print(buttonState[i]);
-  //   Serial.print(" ");
-  // }
-  // Serial.println();
-
-  Serial.print(currentFloor);
-  Serial.println(targetFloor);
+  // write values to output pins 
+  analogWrite(redLED,   redValue);
+  analogWrite(greenLED, greenValue);
+  analogWrite(blueLED,  blueValue);
 }
