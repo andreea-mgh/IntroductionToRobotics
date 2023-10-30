@@ -10,11 +10,15 @@
 
 ## Homework 2
 
+[:page_facing_up: Assignment details](Homework_02/Homework_02.md)
+
 This assignment focuses on controlling each channel (Red, Green, and Blue) of an RGB LED using individual potentiometers.
 
 ![picture of setup](/Homework_02/setup.jpg)
 
 ## Homework 3
+
+[:page_facing_up: Assignment details](Homework_03/Homework_03.md)
 
 This assignment involves simulating a 3-floor elevator control system using LEDs, buttons, and a buzzer with Arduino.
 
