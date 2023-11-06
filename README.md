@@ -23,3 +23,11 @@ This assignment focuses on controlling each channel (Red, Green, and Blue) of an
 This assignment involves simulating a 3-floor elevator control system using LEDs, buttons, and a buzzer with Arduino.
 
 ![picture of setup](/Homework_03/setup.jpg)
+
+## Homework 4
+
+[:page_facing_up: Assignment details](Homework_04/Homework_04.md)
+
+This assignment involves controlling each segment of a 7-segment display using a joystick, with the built-in switch acting like a toggle and a reset button on long press.
+
+![picture of setup](/Homework_04/setup.jpg)
