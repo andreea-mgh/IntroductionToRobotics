@@ -85,6 +85,7 @@ void toggleSegment() {
         // reset = true;
         for (int i = 0; i < segSize; i++) {
           segState[i] = !state;
+          index = segSize - 1;
         }
       } else {
         Serial.println("toggle segment");

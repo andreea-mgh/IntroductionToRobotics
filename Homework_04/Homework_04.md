@@ -16,4 +16,4 @@ This assignment involves simulating a 3-floor elevator control system using LEDs
 
 ## Video
 
-[Demonstration (wip)]()
+[Demonstration](https://youtu.be/HrDIOOV-_4g)
