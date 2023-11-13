@@ -28,3 +28,5 @@ The task was to implement a stopwatch that counts in tenths of a second with 3 b
 
 ## Notes
 * To prevent flickering, whenever certain actions are triggered (save lap, reset lap) they will wait one cycle to be executed. This is to make sure there is no noticeable delay in the display writing.
+* The number of stored laps can be changed by modifying the `maxLaps` constant.
+* Laps are stored in chronological order.
