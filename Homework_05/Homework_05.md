@@ -1,6 +1,13 @@
 # Homework 5
 
-The task was to implement a stopwatch that counts in tenths of a second with 3 buttons: Start/Pause, Reset and Lap. 
+The task was to implement a stopwatch that counts in tenths of a second with 3 buttons: Start/Pause, Reset and Lap.
+
+* The stopwatch is by default in *pause* mode with the time set at 0.
+* The Start/Pause button toggles the *pause* mode.
+* The Reset button resets the timer only in *pause* mode.
+* While the stopwatch is running, pressing the Lap button saves the timestamp.
+* After the timer is reset it can enter *lap viewer* mode by pressing the Lap button.
+* The Lap button also cycles through the timestamps while in *lap viewer* mode.
 
 ## Components
 
