@@ -1,4 +1,4 @@
-# Homework 3
+# Homework 4
 
 This assignment involves simulating a 3-floor elevator control system using LEDs, buttons, and a buzzer with Arduino.
 
