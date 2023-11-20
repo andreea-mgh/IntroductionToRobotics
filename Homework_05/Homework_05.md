@@ -14,7 +14,7 @@ The task was to implement a stopwatch that counts in tenths of a second with 3 b
 * 1x 74HC595 IC
 * 1x 4-digit 7-segment display
 * 8x 330Ω resistor
-* 4x pushbutton
+* 3x pushbutton
 
 ## Setup
 
