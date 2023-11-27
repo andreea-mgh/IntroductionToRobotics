@@ -29,7 +29,7 @@ bool gameLost = false;
 bool gameWon = false;
 
 // settings
-int bombRadius = 1;
+int bombRadius = 3;
 int playerBlinkRate = 400;
 int bombBlinkRate = 150;
 
@@ -164,14 +164,58 @@ void loop() {
       if (bombs[0].isExploded()) {
         numBombs--;
         lc.setLed(0, bombs[0].getX(), bombs[0].getY(), false);
-        for (int i = max(0, bombs[0].getY() - bombRadius); i <= min(7, bombs[0].getY() + bombRadius); i++) {
-          for (int j = max(0, bombs[0].getX() - bombRadius); j <= min(7, bombs[0].getX() + bombRadius); j++) {
-            gameMap[i][j] = 0;
-            if (bomber.getX() == j && bomber.getY() == i) {
-              gameLost = true;
-            }
+        // for (int i = max(0, bombs[0].getY() - bombRadius); i <= min(7, bombs[0].getY() + bombRadius); i++) {
+        //   for (int j = max(0, bombs[0].getX() - bombRadius); j <= min(7, bombs[0].getX() + bombRadius); j++) {
+        //     gameMap[i][j] = 0;
+        //     if (bomber.getX() == j && bomber.getY() == i) {
+        //       gameLost = true;
+        //     }
+        //   }
+        // }
+
+        // north
+        for(int i = max(0, bombs[0].getY() - 1); i >= max(0, bombs[0].getY() - bombRadius); i--){
+          if(gameMap[i][bombs[0].getX()] == 1){
+            gameMap[i][bombs[0].getX()] = 0;
+            break;
+          }
+          if (bomber.getX() == bombs[0].getX() && bomber.getY() == i) {
+            gameLost = true;
           }
         }
+        // south
+        for(int i = min(7, bombs[0].getY() + 1); i <= min(7, bombs[0].getY() + bombRadius); i++){
+          if(gameMap[i][bombs[0].getX()] == 1){
+            gameMap[i][bombs[0].getX()] = 0;
+            break;
+          }
+          if (bomber.getX() == bombs[0].getX() && bomber.getY() == i) {
+            gameLost = true;
+          }
+        }
+        // west
+        for(int i = max(0, bombs[0].getX() - 1); i >= max(0, bombs[0].getX() - bombRadius); i--){
+          if(gameMap[bombs[0].getY()][i] == 1){
+            gameMap[bombs[0].getY()][i] = 0;
+            break;
+          }
+          if (bomber.getX() == i && bomber.getY() == bombs[0].getY()) {
+            gameLost = true;
+          }
+        }
+        // east
+        for(int i = min(7, bombs[0].getX() + 1); i <= min(7, bombs[0].getX() + bombRadius); i++){
+          if(gameMap[bombs[0].getY()][i] == 1){
+            gameMap[bombs[0].getY()][i] = 0;
+            break;
+          }
+          if (bomber.getX() == i && bomber.getY() == bombs[0].getY()) {
+            gameLost = true;
+          }
+        }
+
+
+
         drawMap();
         for (int i = 0; i < numBombs; i++) {
           bombs[i] = bombs[i + 1];
