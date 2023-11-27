@@ -48,41 +48,17 @@ bool gameMap[matrixSize][matrixSize] = {
   { 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 
-void drawMap() {
-  for (int i = 0; i < matrixSize; i++) {
-    for (int j = 0; j < matrixSize; j++) {
-      lc.setLed(0, i, j, gameMap[i][j]);
-    }
-  }
-}
+const uint64_t winAnimation[] = {
+  0x0008142240800000,
+  0x08142a55a2408000
+};
 
-void buttonPress() {
+const uint64_t loseAnimation[] = {
+  0x0022140814220000,
+  0x22552a142a552200
+};
 
-  static unsigned long interruptTime = 0;
-  interruptTime = micros();
-
-  if (interruptTime - lastButtonPressTime > debounceDelay * 1000) {
-    buttonPressed = !buttonPressed;
-    if (buttonPressed) {
-      buttonTrigger = true;
-    }
-  }
-
-  lastButtonPressTime = interruptTime;
-}
-
-
-void setup() {
-  Serial.begin(9600);
-  lc.shutdown(0, false);
-  lc.setIntensity(0, matrixBrightness);
-  lc.clearDisplay(0);
-
-  pinMode(buttonPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(buttonPin), buttonPress, CHANGE);
-
-  randomSeed(analogRead(A5));
-
+void generateMap() {
   for (int i = 0; i < matrixSize; i++) {
     for (int j = 0; j < matrixSize; j++) {
       // wall around player
@@ -104,7 +80,51 @@ void setup() {
       }
     }
   }
+}
 
+void drawMap() {
+  for (int i = 0; i < matrixSize; i++) {
+    for (int j = 0; j < matrixSize; j++) {
+      lc.setLed(0, i, j, gameMap[i][j]);
+    }
+  }
+}
+
+void displayImage(uint64_t image) {
+// SOURCE: xantorohara.github.io/led-matrix-editor
+  for (int i = 0; i < 8; i++) {
+    byte row = (image >> i * 8) & 0xFF;
+    for (int j = 0; j < 8; j++) {
+      lc.setLed(0, i, j, bitRead(row, j));
+    }
+  }
+}
+
+void buttonPress() {
+  static unsigned long interruptTime = 0;
+  interruptTime = micros();
+
+  if (interruptTime - lastButtonPressTime > debounceDelay * 1000) {
+    buttonPressed = !buttonPressed;
+    if (buttonPressed) {
+      buttonTrigger = true;
+    }
+  }
+  lastButtonPressTime = interruptTime;
+}
+
+void setup() {
+  Serial.begin(9600);
+  lc.shutdown(0, false);
+  lc.setIntensity(0, matrixBrightness);
+  lc.clearDisplay(0);
+
+  pinMode(buttonPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(buttonPin), buttonPress, CHANGE);
+
+  randomSeed(analogRead(A5));
+
+  generateMap();
   drawMap();
 }
 
@@ -236,29 +256,59 @@ void loop() {
   
 
   else if (gameLost) {
+    // lc.setLed(0, 1, 1, true);
+    // lc.setLed(0, 2, 2, true);
+    // lc.setLed(0, 3, 3, true);
+    // lc.setLed(0, 4, 4, true);
+    // lc.setLed(0, 5, 5, true);
+    // lc.setLed(0, 5, 1, true);
+    // lc.setLed(0, 4, 2, true);
+    // lc.setLed(0, 2, 4, true);
+    // lc.setLed(0, 1, 5, true);
+    Serial.println("You Lost!");
     lc.clearDisplay(0);
-    lc.setLed(0, 1, 1, true);
-    lc.setLed(0, 2, 2, true);
-    lc.setLed(0, 3, 3, true);
-    lc.setLed(0, 4, 4, true);
-    lc.setLed(0, 5, 5, true);
-    lc.setLed(0, 5, 1, true);
-    lc.setLed(0, 4, 2, true);
-    lc.setLed(0, 2, 4, true);
-    lc.setLed(0, 1, 5, true);
-    Serial.println("Game Over");
+    displayImage(loseAnimation[0]);
+    delay(500);
+    displayImage(loseAnimation[1]);
+    delay(500);
+    displayImage(loseAnimation[0]);
+    delay(500);
+    displayImage(loseAnimation[1]);
+    delay(1500);
+
+    lc.clearDisplay(0);
+    bomber = Player(&lc, 0, 0);
+    gameWon = false;
+    gameLost = false;
+    generateMap();
+    drawMap();
   }
 
 
   else if(gameWon){
+    // lc.setLed(0, 4, 1, true);
+    // lc.setLed(0, 5, 2, true);
+    // lc.setLed(0, 6, 3, true);
+    // lc.setLed(0, 5, 4, true);
+    // lc.setLed(0, 4, 5, true);
+    // lc.setLed(0, 3, 6, true);
+    // lc.setLed(0, 2, 7, true);
+    Serial.println("You Won!");
     lc.clearDisplay(0);
-    lc.setLed(0, 4, 1, true);
-    lc.setLed(0, 5, 2, true);
-    lc.setLed(0, 6, 3, true);
-    lc.setLed(0, 5, 4, true);
-    lc.setLed(0, 4, 5, true);
-    lc.setLed(0, 3, 6, true);
-    lc.setLed(0, 2, 7, true);
-    Serial.println("You Win!");
+    displayImage(winAnimation[0]);
+    delay(500);
+    displayImage(winAnimation[1]);
+    delay(500);
+    displayImage(winAnimation[0]);
+    delay(500);
+    displayImage(winAnimation[1]);
+    delay(1500);
+
+    lc.clearDisplay(0);
+    bomber = Player(&lc, 0, 0);
+    gameWon = false;
+    gameLost = false;
+    generateMap();
+    drawMap();
   }
 }
