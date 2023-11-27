@@ -47,3 +47,11 @@ The task was to implement a stopwatch that counts in tenths of a second with 3 b
 This task involves simulating a pseudo-smart system monitor, with an interactive menu controlled through Serial I/O.
 
 ![picture of setup](/Homework_06/setup.jpg)
+
+# Homework 7
+
+[:page_facing_up: Assignment details](Homework_07/Homework_07.md)
+
+For this assignment I made a small version of the Bomberman game with no enemies.
+
+![picture of setup](/Homework_07/setup.jpg)
