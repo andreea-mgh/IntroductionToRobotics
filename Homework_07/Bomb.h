@@ -7,9 +7,8 @@ class Bomb {
   public:
     Bomb();
     Bomb(LedControl* lc, int x = 0, int y = 0);
-    void setBlinkRate(int blinkRate);
     void setExplodeTime(unsigned long explodeTime);
-    void draw();
+    void draw(unsigned long blinkRate);
     int getX();
     int getY();
     bool isExploded();
@@ -18,7 +17,6 @@ class Bomb {
     int y;
     LedControl* ledMatrix;
     unsigned long placeTime;
-    unsigned long blinkRate;
     unsigned long explodeTime;
 };
 

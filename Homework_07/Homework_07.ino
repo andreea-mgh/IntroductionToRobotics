@@ -1,40 +1,43 @@
-#include <LedControl.h>  // need the library
-#include <Vector.h>
+#include <LedControl.h>
 #include "Player.h"
 #include "Bomb.h"
-const byte dinPin = 12;                                    // pin 12 is connected to the MAX7219 pin 1
-const byte clockPin = 11;                                  // pin 11 is connected to the CLK pin 13
-const byte loadPin = 10;                                   // pin 10 is connected to LOAD pin 12
-const byte matrixSize = 8;                                 // 1 as we are only using 1 MAX7219
-LedControl lc = LedControl(dinPin, clockPin, loadPin, 1);  //DIN, CLK, LOAD, No. DRIVER
+const byte dinPin = 12;
+const byte clockPin = 11;
+const byte loadPin = 10;
+const byte matrixSize = 8;
+LedControl lc = LedControl(dinPin, clockPin, loadPin, 1);
 byte matrixBrightness = 2;
 
 const int pinX = A0;
 const int pinY = A1;
 const int buttonPin = 2;
 
+// joystick parameters
 const int joystickMinThreshold = 384;
 const int joystickMaxThreshold = 640;
 
+// movement speed
 unsigned long lastMoveTime = 0;
 const unsigned long moveDelay = 100;
 
 bool buttonPressed = false;
 unsigned long lastButtonPressTime = 0;
 unsigned long debounceDelay = 100;
-volatile bool bombPlaced = false;
+volatile bool buttonTrigger = false;
 
 bool gameLost = false;
 bool gameWon = false;
-int bombRadius = 1;
 
+// settings
+int bombRadius = 1;
+int playerBlinkRate = 400;
+int bombBlinkRate = 150;
 
 Player bomber = Player(&lc, 0, 0);
-// Vector<Bomb> bombs;
 Bomb bombs[10];
 int numBombs = 0;
 
-byte gameMap[matrixSize][matrixSize] = {
+bool gameMap[matrixSize][matrixSize] = {
   { 0, 0, 0, 0, 0, 0, 0, 0 },
   { 0, 0, 0, 0, 0, 0, 0, 0 },
   { 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -48,11 +51,7 @@ byte gameMap[matrixSize][matrixSize] = {
 void drawMap() {
   for (int i = 0; i < matrixSize; i++) {
     for (int j = 0; j < matrixSize; j++) {
-      if (gameMap[i][j] == 1) {
-        lc.setLed(0, i, j, true);
-      } else {
-        lc.setLed(0, i, j, false);
-      }
+      lc.setLed(0, i, j, gameMap[i][j]);
     }
   }
 }
@@ -65,7 +64,7 @@ void buttonPress() {
   if (interruptTime - lastButtonPressTime > debounceDelay * 1000) {
     buttonPressed = !buttonPressed;
     if (buttonPressed) {
-      bombPlaced = true;
+      buttonTrigger = true;
     }
   }
 
@@ -153,10 +152,10 @@ void loop() {
       }
     }
 
-    if (bombPlaced) {
+    if (buttonTrigger) {
       bombs[numBombs] = Bomb(&lc, bomber.getX(), bomber.getY());
       numBombs++;
-      bombPlaced = false;
+      buttonTrigger = false;
     }
 
     // are there bombs in the queue?
@@ -167,10 +166,6 @@ void loop() {
         lc.setLed(0, bombs[0].getX(), bombs[0].getY(), false);
         for (int i = max(0, bombs[0].getY() - bombRadius); i <= min(7, bombs[0].getY() + bombRadius); i++) {
           for (int j = max(0, bombs[0].getX() - bombRadius); j <= min(7, bombs[0].getX() + bombRadius); j++) {
-            // Serial.print("removed:");
-            // Serial.print(i);
-            // Serial.print(",");
-            // Serial.println(j);
             gameMap[i][j] = 0;
             if (bomber.getX() == j && bomber.getY() == i) {
               gameLost = true;
@@ -182,33 +177,44 @@ void loop() {
           bombs[i] = bombs[i + 1];
         }
       }
-      // draw bombs
+      // draw remaining bombs
       for (int i = 0; i < numBombs; i++) {
-        bombs[i].draw();
+        bombs[i].draw(bombBlinkRate);
       }
     }
+
+    // did bomber reach the exit?
     if(bomber.getX() == 7 && bomber.getY() == 7){
       gameWon = true;
     }
-    bomber.draw();
+    bomber.draw(playerBlinkRate);
   }
   
 
   else if (gameLost) {
     lc.clearDisplay(0);
-    lc.setLed(0, 0, 0, true);
-    lc.setLed(0, 0, 7, true);
-    lc.setLed(0, 7, 0, true);
-    lc.setLed(0, 7, 7, true);
+    lc.setLed(0, 1, 1, true);
+    lc.setLed(0, 2, 2, true);
+    lc.setLed(0, 3, 3, true);
+    lc.setLed(0, 4, 4, true);
+    lc.setLed(0, 5, 5, true);
+    lc.setLed(0, 5, 1, true);
+    lc.setLed(0, 4, 2, true);
+    lc.setLed(0, 2, 4, true);
+    lc.setLed(0, 1, 5, true);
     Serial.println("Game Over");
   }
 
+
   else if(gameWon){
     lc.clearDisplay(0);
-    lc.setLed(0, 0, 0, true);
-    lc.setLed(0, 0, 7, true);
-    lc.setLed(0, 7, 0, true);
-    lc.setLed(0, 7, 7, true);
+    lc.setLed(0, 4, 1, true);
+    lc.setLed(0, 5, 2, true);
+    lc.setLed(0, 6, 3, true);
+    lc.setLed(0, 5, 4, true);
+    lc.setLed(0, 4, 5, true);
+    lc.setLed(0, 3, 6, true);
+    lc.setLed(0, 2, 7, true);
     Serial.println("You Win!");
   }
 }

@@ -9,19 +9,14 @@ Bomb::Bomb(LedControl* lc, int x = 0, int y = 0) {
   this->y = y;
   ledMatrix = lc;
   placeTime = millis();
-  blinkRate = 150;
   explodeTime = 2000;
-}
-
-void Bomb::setBlinkRate(int blinkRate){
-  this->blinkRate = blinkRate;
 }
 
 void Bomb::setExplodeTime(unsigned long explodeTime){
   this->explodeTime = explodeTime;
 }
 
-void Bomb::draw(){
+void Bomb::draw(unsigned long blinkRate){
   if(millis() % blinkRate < blinkRate / 2){
     ledMatrix->setLed(0, y, x, false);
   } else {

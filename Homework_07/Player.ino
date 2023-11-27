@@ -5,11 +5,6 @@ Player::Player(LedControl* lc, int x = 0, int y = 0) {
 	this->x = x;
   this->y = y;
   ledMatrix = lc;
-  blinkRate = 400;
-}
-
-void Player::setBlinkRate(int blinkRate){
-  this->blinkRate = blinkRate;
 }
 
 void Player::moveTo(int x, int y){
@@ -49,7 +44,7 @@ void Player::moveRight(){
   }
 }
 
-void Player::draw(){
+void Player::draw(unsigned long blinkRate){
   if(millis() % blinkRate < blinkRate / 2){
     ledMatrix->setLed(0, y, x, false);
   } else {

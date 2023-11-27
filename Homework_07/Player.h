@@ -6,20 +6,18 @@
 class Player {
   public:
     Player(LedControl* lc, int x = 0, int y = 0);
-    void setBlinkRate(int blinkRate);
     void moveTo(int x, int y);
     void moveUp();
     void moveDown();
     void moveLeft();
     void moveRight();
-    void draw();
+    void draw(unsigned long blinkRate);
     int getX();
     int getY();
   private:
     int x;
     int y;
     LedControl* ledMatrix;
-    unsigned long blinkRate;
 };
 
 #endif
