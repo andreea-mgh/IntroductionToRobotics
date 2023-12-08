@@ -2,36 +2,30 @@
 #include <LiquidCrystal.h>
 #include "Player.h"
 #include "Monster.h"
-const byte dinPin = 12;
-const byte clockPin = 11;
-const byte loadPin = 10;
+const byte dinPin = 13;
+const byte clockPin = 12;
+const byte loadPin = 11;
 const byte matrixSize = 8;
 LedControl ledMatrix(dinPin, clockPin, loadPin, 1);
-byte matrixBrightness = 2;
 const byte lcd_rs = 9;
 const byte lcd_en = 8;
 const byte lcd_d4 = 7;
 const byte lcd_d5 = 6;
 const byte lcd_d6 = 5;
 const byte lcd_d7 = 4;
+const byte lcd_bl = 10;
 LiquidCrystal lcd(lcd_rs, lcd_en, lcd_d4, lcd_d5, lcd_d6, lcd_d7);
 
-byte lifeChar[8] = {
-	0b00000,
-	0b00000,
-	0b01010,
-	0b11111,
-	0b11111,
-	0b01110,
-	0b00100,
-	0b00000
-};
+byte lcdBrightness = 128;
+byte lcdBrightnessMax = 255;
+byte matrixBrightness = 2;
+byte matrixBrightnessMax = 15;
 
 const int pinX = A0;
 const int pinY = A1;
 const int buttonPin = 2;
 
-const int buzzPin = 13;
+const int buzzPin = 3;
 
 // joystick parameters
 const int joystickMinThreshold = 384;
@@ -42,6 +36,8 @@ unsigned long lastMoveTime = 0;
 const unsigned long moveDelay = 100;
 const unsigned long menuMoveDelay = 300;
 
+unsigned long levelStartTime = 0;
+unsigned long currentScore = 0;
 
 bool buttonPressed = false;
 unsigned long lastButtonPressTime = 0;
@@ -76,6 +72,33 @@ int numMonsters = 0;
 
 const int mapSize = 16;
 const int numLevels = 1;
+
+
+byte lifeChar[8] = {
+	0b00000,
+	0b00000,
+	0b01010,
+	0b11111,
+	0b11111,
+	0b01110,
+	0b00100,
+	0b00000
+};
+
+byte timeChar[8] = {
+	0b00000,
+	0b00000,
+	0b01110,
+	0b10101,
+	0b10111,
+	0b10001,
+	0b01110,
+	0b00000
+};
+
+const uint64_t matrixImages[] = {
+  0x6699997e9999a5c3
+};
 
 byte gameMap[mapSize][mapSize];
 
@@ -116,19 +139,19 @@ void loadLevel(int level = 0) {
       for(int j = 0; j < mapSize; j++) {
         gameMap[i][j] = pgm_read_byte(&gameLevels[level][i][j]);
         Serial.print(gameMap[i][j]);
-        Serial.print(" ");
+        Serial.print(F(" "));
       }
-      Serial.print("\n");
+      Serial.print(F("\n"));
     }
   }
 }
 
 void drawMap(int x, int y) {
-  Serial.print("drawMap: ");
+  Serial.print(F("drawMap: "));
   Serial.print(x);
-  Serial.print(" ");
+  Serial.print(F(" "));
   Serial.print(y);
-  Serial.print("\n");
+  Serial.print(F("\n"));
   ledMatrix.clearDisplay(0);
   for (int i = y; i < y + matrixSize; i++) {
     for (int j = x; j < x + matrixSize; j++) {
@@ -168,106 +191,255 @@ void setup() {
 
   pinMode(buttonPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(buttonPin), buttonPress, CHANGE);
+
+  pinMode(lcd_bl, OUTPUT);
   
   lcd.begin(16, 2);
 
   lcd.createChar(0, lifeChar);
+  lcd.createChar(1, timeChar);
 
   randomSeed(analogRead(A5));
 
   noTone(buzzPin);
   lcd.setCursor(0, 0);
-  lcd.print("////////////////");
+  lcd.print(F("////////////////"));
   lcd.setCursor(0, 1);
-  lcd.print("///THE DEEP DARK");
+  lcd.print(F("///THE DEEP DARK"));
   tone(buzzPin, 100);
   delay(100);
+  analogWrite(lcd_bl, lcdBrightness);
 
   lcd.setCursor(0, 0);
-  lcd.print("////////////////");
+  lcd.print(F("////////////////"));
   lcd.setCursor(0, 1);
-  lcd.print("///             ");
+  lcd.print(F("///             "));
   noTone(buzzPin);
   delay(100);
 
   lcd.setCursor(0, 0);
-  lcd.print("////////////////");
+  lcd.print(F("////////////////"));
   lcd.setCursor(0, 1);
-  lcd.print("///THE DEEP DARK");
+  lcd.print(F("///THE DEEP DARK"));
   tone(buzzPin, 100);
   delay(200);
 
   lcd.setCursor(0, 0);
-  lcd.print("////////////////");
+  lcd.print(F("////////////////"));
   lcd.setCursor(0, 1);
-  lcd.print("///             ");
+  lcd.print(F("///             "));
   noTone(buzzPin);
   delay(200);
 
   lcd.setCursor(0, 0);
-  lcd.print("////////////////");
+  lcd.print(F("////////////////"));
   lcd.setCursor(0, 1);
-  lcd.print("///THE DEEP DARK");
+  lcd.print(F("///THE DEEP DARK"));
   tone(buzzPin, 100);
   delay(400);
 
   lcd.setCursor(0, 0);
-  lcd.print("||||||||||||||||");
+  lcd.print(F("||||||||||||||||"));
   lcd.setCursor(0, 1);
-  lcd.print("||||||||||||||||");
+  lcd.print(F("||||||||||||||||"));
   delay(1000);
   noTone(buzzPin);
 
-  survivor = Player(&ledMatrix, 1, 1);
-  loadLevel(0);
-  drawMap(cameraX, cameraY);
+  displayImage(matrixImages[0]);
 }
 
 void loop() {
 
   if(gameStatus == 0) {
-    lcd.setCursor(0, 1);
-    lcd.print("///THE DEEP DARK");
-    lcd.setCursor(0, 0);
-    if(currentOption == 0) {
-      lcd.print("   START       >");
-    }
-    else if(currentOption == 1) {
-      lcd.print("<  SETTINGS    >");
-    }
-    else {
-      lcd.print("<  ABOUT        ");
-    }
-
     int xValue = analogRead(pinX);
     int yValue = analogRead(pinY);
 
-    if (millis() - lastMoveTime > menuMoveDelay) {
-      if (xValue < joystickMinThreshold && currentOption > 0) {
-        currentOption--;
-      }
-      if (xValue > joystickMaxThreshold) {
-        if(currentOption < 2) {
-          currentOption++;
+    // MAIN MENU
+    if(currentMenu == 0) {
+      lcd.setCursor(0, 1);
+      lcd.print(F("///THE DEEP DARK"));
+
+      lcd.setCursor(0, 0);
+      if(currentOption == 0) {
+        lcd.print(F("   START       >"));
+        if(buttonTrigger) {
+          lcd.clear();
+          gameStatus = 1;
+          survivor = Player(&ledMatrix, 2, 2);
+          loadLevel(0);
+          cameraX = 0;
+          cameraY = 0;
+          drawMap(cameraX, cameraY);
+          levelStartTime = millis();
+          buttonTrigger = false;
         }
       }
-      lastMoveTime = millis();
-    }
-
-    if(buttonTrigger) {
-      if(currentOption == 0) {
-        gameStatus = 1;
-      }
-      else if (currentOption == 1) {
-        // settings
-        ;
+      else if(currentOption == 1) {
+        lcd.print(F("<  SETTINGS    >"));
+        if(buttonTrigger) {
+          lcd.clear();
+          currentMenu = 1;
+          currentOption = 0;
+          buttonTrigger = false;
+        }
       }
       else {
-        // about
-        ;
+        lcd.print(F("<  ABOUT        "));
+        if(buttonTrigger) {
+          lcd.clear();
+          currentMenu = 2;
+          currentOption = 0;
+          buttonTrigger = false;
+        }
       }
-      buttonTrigger = false;
+
+      if (millis() - lastMoveTime > menuMoveDelay) {
+        if (xValue < joystickMinThreshold && currentOption > 0) {
+          lcd.clear();
+          currentOption--;
+          lastMoveTime = millis();
+        }
+        if (xValue > joystickMaxThreshold && currentOption < 2) {
+          lcd.clear();
+          currentOption++;
+          lastMoveTime = millis();
+        }
+      }
     }
+
+    else if(currentMenu == 1) {
+      lcd.setCursor(0, 0);
+      if(currentOption == 0) {
+        lcd.print(F("   LCD         >"));
+        lcd.setCursor(0, 1);
+        lcd.print(lcdBrightness);
+
+      }
+      else if(currentOption == 1) {
+        lcd.print(F("<  MATRIX      >"));
+        lcd.setCursor(0, 1);
+        lcd.print(matrixBrightness);
+      }
+      else {
+        lcd.print(F("<  BACK         "));
+        if(buttonTrigger) {
+          currentMenu = 0;
+          currentOption = 0;
+          buttonTrigger = false;
+        }
+      }
+
+      if (millis() - lastMoveTime > menuMoveDelay) {
+        if (xValue < joystickMinThreshold && currentOption > 0) {
+          lcd.clear();
+          currentOption--;
+          lastMoveTime = millis();
+        }
+        if (xValue > joystickMaxThreshold && currentOption < 2) {
+          lcd.clear();
+          currentOption++;
+          lastMoveTime = millis();
+        }
+        if (yValue < joystickMinThreshold) {
+          if(currentOption == 0 && lcdBrightness < lcdBrightnessMax) {
+            lcdBrightness++;
+            analogWrite(lcd_bl, lcdBrightness);
+            lcd.clear();
+            lcd.setCursor(0, 1);
+            lcd.print(lcdBrightness);
+            lcd.setCursor(0, 0);
+            lcd.print(F("   LCD         >"));
+            lcd.setCursor(0, 1);
+            lcd.print(lcdBrightness);
+            analogWrite(lcd_bl, lcdBrightness);
+            Serial.println(lcdBrightness);
+            lastMoveTime = millis();
+          }
+          else if(currentOption == 1 && matrixBrightness < matrixBrightnessMax) {
+            matrixBrightness++;
+            ledMatrix.setIntensity(0, matrixBrightness);
+            lcd.clear();
+            lcd.setCursor(0, 1);
+            lcd.print(matrixBrightness);
+            lcd.setCursor(0, 0);
+            lcd.print(F("   MATRIX      >"));
+            lcd.setCursor(0, 1);
+            lcd.print(matrixBrightness);
+            lastMoveTime = millis();
+          }
+        }
+        if(yValue > joystickMaxThreshold) {
+          if(currentOption == 0 && lcdBrightness > 0) {
+            lcdBrightness--;
+            lcd.setCursor(0, 1);
+            lcd.print(lcdBrightness);
+            lcd.setCursor(0, 0);
+            lcd.print(F("   LCD         >"));
+            lcd.setCursor(0, 1);
+            lcd.print(lcdBrightness);
+            analogWrite(lcd_bl, lcdBrightness);
+            Serial.println(lcdBrightness);
+            lastMoveTime = millis();
+          }
+          else if(currentOption == 1 && matrixBrightness > 0) {
+            matrixBrightness--;
+            ledMatrix.setIntensity(0, matrixBrightness);
+            lcd.setCursor(0, 1);
+            lcd.print(matrixBrightness);
+            lcd.setCursor(0, 0);
+            lcd.print(F("   MATRIX      >"));
+            lcd.setCursor(0, 1);
+            lcd.print(matrixBrightness);
+            lastMoveTime = millis();
+          }
+        }
+      }
+    }
+    else if(currentMenu == 2) {
+      if(currentOption == 0) {
+        lcd.setCursor(0, 0);
+        lcd.print(F("The Deep Dark  "));
+        lcd.setCursor(0, 1);
+        lcd.print(F("               "));
+      }
+      else if(currentOption == 1) {
+        lcd.setCursor(0, 0);
+        lcd.print(F("Author: Andreea"));
+        lcd.setCursor(0, 1);
+        lcd.print(F("     Megherlich"));
+      }
+      else if(currentOption == 2) {
+        lcd.setCursor(0, 0);
+        lcd.print(F("GitHub:         "));
+        lcd.setCursor(0, 1);
+        lcd.print(F("     andreea-mgh"));
+      }
+      else if(currentOption == 3) {
+        lcd.setCursor(0, 0);
+        lcd.print(F(" Introduction to"));
+        lcd.setCursor(0, 1);
+        lcd.print(F(" Robotics - 2023"));
+      }
+      else if(currentOption == 4) {
+        lcd.setCursor(0, 0);
+        lcd.print(F(" CLICK TO RETURN"));
+        lcd.setCursor(0, 1);
+        lcd.print(F("TO THE MAIN MENU"));
+      }
+      
+      if(buttonTrigger) {
+        if(currentOption < 4) {
+          currentOption ++;
+        }
+        else {
+          currentMenu = 0;
+          currentOption = 0;
+        }
+        buttonTrigger = false;
+      }
+    }
+
+
   }
 
 
@@ -317,6 +489,7 @@ void loop() {
       }
     }
 
+    // camera movement
     if(survivor.getX() - cameraX > 5 && cameraX < mapSize - matrixSize) {
       cameraX = survivor.getX() - 5;
       drawMap(cameraX, cameraY);
@@ -338,16 +511,59 @@ void loop() {
       gameWon = true;
       gameStatus = 2;
     }
+
+    if(survivor.getLives() == 0) {
+      gameWon = false;
+      gameStatus = 2;
+    }
     
 
     // draw player
-    survivor.draw(playerBlinkRate, cameraX, cameraY);
+    survivor.draw(playerBlinkRate);
 
-    // Serial.print(cameraX);
-    // Serial.print(cameraY);
-    // Serial.print(survivor.getX());
-    // Serial.print(survivor.getY());
-    // Serial.print("\n");
+    // lcd
+    lcd.setCursor(0, 0);
+    lcd.write(byte(1));
+    lcd.setCursor(2, 0);
+    lcd.print((millis() - levelStartTime) / 60000);
+    lcd.print(F(":"));
+    lcd.print(((millis() - levelStartTime) / 1000) % 60 / 10);
+    lcd.print(((millis() - levelStartTime) / 1000) % 60 % 10);
+    for(int i = 15; i > 15-survivor.getLives(); i--) {
+      lcd.setCursor(i, 0);
+      lcd.write(byte(0));
+    }
+
+    if(gameStatus == 2) {
+      displayImage(matrixImages[0]);
+      if(gameWon) {
+        lcd.setCursor(0, 0);
+        lcd.print(F("////////////////"));
+        lcd.setCursor(0, 1);
+        lcd.print(F("///  YOU WIN    "));
+      }
+      else {
+        lcd.setCursor(0, 0);
+        lcd.print(F("////////////////"));
+        lcd.setCursor(0, 1);
+        lcd.print(F("///  YOU LOSE   "));
+      }
+      delay(1000);
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print(F("////////////////"));
+      lcd.setCursor(0, 1);
+      lcd.print(F("/// SCORE: "));
+      lcd.print(currentScore);
+    }
+
+  }
+
+  if(gameStatus == 2) {
+    if(buttonTrigger) {
+      gameStatus = 0;
+      buttonTrigger = false;
+    }
   }
 
 }

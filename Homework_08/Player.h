@@ -11,15 +11,17 @@ class Player {
     void moveDown();
     void moveLeft();
     void moveRight();
-    void draw(unsigned long blinkRate, int cameraX, int cameraY);
+    void draw(unsigned long blinkRate);
     int getX();
     int getY();
+    int getLives();
+    void addLife();
+    void removeLife();
+    void setLives(int lives);
   private:
     int x;
     int y;
-    bool moved;
-    int lastX;
-    int lastY;
+    int lives;
     LedControl* ledMatrix;
 };
 

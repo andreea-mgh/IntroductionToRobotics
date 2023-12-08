@@ -4,15 +4,11 @@
 Player::Player(LedControl* lc, int x = 0, int y = 0) {
 	this->x = x;
   this->y = y;
-  this->lastX = x;
-  this->lastY = y;
-  bool moved = false;
+  this->lives = 3;
   ledMatrix = lc;
 }
 
 void Player::moveTo(int x, int y){
-  this->lastX = this->x;
-  this->lastY = this->y;
   this->x = x;
   this->y = y;
 }
@@ -59,4 +55,20 @@ int Player::getX(){
 
 int Player::getY(){
   return y;
+}
+
+int Player::getLives(){
+  return lives;
+}
+
+void Player::addLife(){
+  lives++;
+}
+
+void Player::removeLife(){
+  lives--;
+}
+
+void Player::setLives(int lives){
+  this->lives = lives;
 }
