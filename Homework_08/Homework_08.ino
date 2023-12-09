@@ -1,5 +1,6 @@
 #include <LedControl.h>
 #include <LiquidCrystal.h>
+#include <EEPROM.h>
 #include "Player.h"
 #include "Monster.h"
 const byte dinPin = 13;
@@ -133,6 +134,7 @@ const uint64_t loseAnimation[] PROGMEM = {
   0x22552a142a552200
 };
 
+// I WILL PUT SOMETHING SMART HERE EVENTUALLY
 void loadLevel(int level = 0) {
   if(level < numLevels) {
     for(int i = 0; i < mapSize; i++) {
@@ -185,6 +187,9 @@ void buttonPress() {
 
 void setup() {
   Serial.begin(9600);
+  lcdBrightness = EEPROM.read(0);
+  matrixBrightness = EEPROM.read(1);
+
   ledMatrix.shutdown(0, false);
   ledMatrix.setIntensity(0, matrixBrightness);
   ledMatrix.clearDisplay(0);
@@ -307,6 +312,7 @@ void loop() {
       }
     }
 
+    // SETTINGS
     else if(currentMenu == 1) {
       lcd.setCursor(0, 0);
       if(currentOption == 0) {
@@ -326,6 +332,8 @@ void loop() {
           currentMenu = 0;
           currentOption = 0;
           buttonTrigger = false;
+          EEPROM.update(0, lcdBrightness);
+          EEPROM.update(1, matrixBrightness);
         }
       }
 
@@ -395,6 +403,8 @@ void loop() {
         }
       }
     }
+
+    // ABOUT
     else if(currentMenu == 2) {
       if(currentOption == 0) {
         lcd.setCursor(0, 0);
