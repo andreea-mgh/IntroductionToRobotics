@@ -34,8 +34,8 @@ const int joystickMaxThreshold = 640;
 
 // movement speed
 unsigned long lastMoveTime = 0;
-const unsigned long moveDelay = 100;
-const unsigned long menuMoveDelay = 300;
+const unsigned long moveDelay = 250;
+const unsigned long menuMoveDelay = 250;
 
 unsigned long levelStartTime = 0;
 unsigned long currentScore = 0;
@@ -60,9 +60,11 @@ int gameStatus = 0;
 // settings
 int playerBlinkRate = 400;
 int bombBlinkRate = 100;
-int flashTime = 500; 
 
-bool flash = true;
+int flashStartTime = 0;
+int flashDuration = 1500;
+bool flash = false;
+
 int cameraX = 0;
 int cameraY = 0;
 
@@ -72,7 +74,7 @@ int numMonsters = 0;
 
 
 const int mapSize = 16;
-const int numLevels = 1;
+const int numLevels = 5;
 
 
 byte lifeChar[8] = {
@@ -121,6 +123,78 @@ const byte gameLevels[numLevels][mapSize][mapSize] PROGMEM = {
     { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
     { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
     { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
+  },
+  {
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1 },
+    { 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
+  },
+  {
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1 },
+    { 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
+  },
+  {
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1 },
+    { 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
+  },
+  {
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1 },
+    { 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
   }
 };
 
@@ -140,10 +214,7 @@ void loadLevel(int level = 0) {
     for(int i = 0; i < mapSize; i++) {
       for(int j = 0; j < mapSize; j++) {
         gameMap[i][j] = pgm_read_byte(&gameLevels[level][i][j]);
-        Serial.print(gameMap[i][j]);
-        Serial.print(F(" "));
       }
-      Serial.print(F("\n"));
     }
   }
 }
@@ -158,6 +229,23 @@ void drawMap(int x, int y) {
   for (int i = y; i < y + matrixSize; i++) {
     for (int j = x; j < x + matrixSize; j++) {
       ledMatrix.setLed(0, i-y, j-x, gameMap[i][j]);
+    }
+  }
+}
+
+void see(int cameraX, int cameraY, int x, int y) {
+  for(int i=-1; i<=1; i++) {
+    for(int j=-1; j<=1; j++) {
+      if(x+i >= 0 && x+i < mapSize && y+j >= 0 && y+j < mapSize) {
+        ledMatrix.setLed(0, y+j-cameraY, x+i-cameraX, gameMap[y+j][x+i]);
+        Serial.print(F("see: "));
+        Serial.print(x+i);
+        Serial.print(F(" "));
+        Serial.print(y+j);
+        Serial.print(F(" "));
+        Serial.print(gameMap[y+j][x+i]);
+        Serial.print(F("\n"));
+      }
     }
   }
 }
@@ -187,6 +275,8 @@ void buttonPress() {
 
 void setup() {
   Serial.begin(9600);
+  Serial.println(sizeof(gameLevels));
+
   lcdBrightness = EEPROM.read(0);
   matrixBrightness = EEPROM.read(1);
 
@@ -255,6 +345,7 @@ void setup() {
 
 void loop() {
 
+  // MENU
   if(gameStatus == 0) {
     int xValue = analogRead(pinX);
     int yValue = analogRead(pinY);
@@ -274,7 +365,8 @@ void loop() {
           loadLevel(0);
           cameraX = 0;
           cameraY = 0;
-          drawMap(cameraX, cameraY);
+          ledMatrix.clearDisplay(0);
+          // drawMap(cameraX, cameraY);
           levelStartTime = millis();
           buttonTrigger = false;
         }
@@ -454,12 +546,12 @@ void loop() {
 
 
 
-  if(gameStatus == 1) {
+  // GAME
+  else if(gameStatus == 1) {
 
     // player movement
     int xValue = analogRead(pinX);
     int yValue = analogRead(pinY);
-
     if (millis() - lastMoveTime > moveDelay) {
       if (xValue < joystickMinThreshold) {
         if (survivor.getX() > 0) {
@@ -467,6 +559,13 @@ void loop() {
           if (gameMap[survivor.getY()][survivor.getX() - 1] == 0) {
             survivor.moveLeft();
             lastMoveTime = millis();
+            tone(buzzPin, 100, 50);
+            ledMatrix.clearDisplay(0);
+            see(cameraX, cameraY, survivor.getX(), survivor.getY());
+            lcd.setCursor(0, 1);
+            lcd.print(survivor.getX());
+            lcd.print(F(" "));
+            lcd.print(survivor.getY());
           }
         }
       }
@@ -476,6 +575,13 @@ void loop() {
           if (gameMap[survivor.getY()][survivor.getX() + 1] == 0) {
             survivor.moveRight();
             lastMoveTime = millis();
+            tone(buzzPin, 100, 50);
+            ledMatrix.clearDisplay(0);
+            see(cameraX, cameraY, survivor.getX(), survivor.getY());
+            lcd.setCursor(0, 1);
+            lcd.print(survivor.getX());
+            lcd.print(F(" "));
+            lcd.print(survivor.getY());
           }
         }
       }
@@ -485,6 +591,13 @@ void loop() {
           if (gameMap[survivor.getY() - 1][survivor.getX()] == 0) {
             survivor.moveUp();
             lastMoveTime = millis();
+            tone(buzzPin, 100, 50);
+            ledMatrix.clearDisplay(0);
+            see(cameraX, cameraY, survivor.getX(), survivor.getY());
+            lcd.setCursor(0, 1);
+            lcd.print(survivor.getX());
+            lcd.print(F(" "));
+            lcd.print(survivor.getY());
           }
         }
       }
@@ -494,6 +607,13 @@ void loop() {
           if (gameMap[survivor.getY() + 1][survivor.getX()] == 0) {
             survivor.moveDown();
             lastMoveTime = millis();
+            tone(buzzPin, 100, 50);
+            ledMatrix.clearDisplay(0);
+            see(cameraX, cameraY, survivor.getX(), survivor.getY());
+            lcd.setCursor(0, 1);
+            lcd.print(survivor.getX());
+            lcd.print(F(" "));
+            lcd.print(survivor.getY());
           }
         }
       }
@@ -502,19 +622,68 @@ void loop() {
     // camera movement
     if(survivor.getX() - cameraX > 5 && cameraX < mapSize - matrixSize) {
       cameraX = survivor.getX() - 5;
-      drawMap(cameraX, cameraY);
+      if(flash) {
+        drawMap(cameraX, cameraY);
+      }
+      else {
+        see(cameraX, cameraY, survivor.getX(), survivor.getY());
+        // ledMatrix.setLed(0, survivor.getY() - cameraY - 1, survivor.getX() - cameraX, gameMap[survivor.getY() - 1][survivor.getX()]);
+        // ledMatrix.setLed(0, survivor.getY() - cameraY + 1, survivor.getX() - cameraX, gameMap[survivor.getY() + 1][survivor.getX()]);
+        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX - 1, gameMap[survivor.getY()][survivor.getX() - 1]);
+        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX + 1, gameMap[survivor.getY()][survivor.getX() + 1]);
+      }
     }
     if(survivor.getY() - cameraY > 5 && cameraY < mapSize - matrixSize) {
       cameraY = survivor.getY() - 5;
-      drawMap(cameraX, cameraY);
+      if(flash) {
+        drawMap(cameraX, cameraY);
+      }
+      else {
+        see(cameraX, cameraY, survivor.getX(), survivor.getY());
+        // ledMatrix.setLed(0, survivor.getY() - cameraY - 1, survivor.getX() - cameraX, gameMap[survivor.getY() - 1][survivor.getX()]);
+        // ledMatrix.setLed(0, survivor.getY() - cameraY + 1, survivor.getX() - cameraX, gameMap[survivor.getY() + 1][survivor.getX()]);
+        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX - 1, gameMap[survivor.getY()][survivor.getX() - 1]);
+        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX + 1, gameMap[survivor.getY()][survivor.getX() + 1]);
+      }
     }
     if(survivor.getX() - cameraX < 2 && cameraX > 0) {
       cameraX = survivor.getX() - 2;
-      drawMap(cameraX, cameraY);
+      if(flash) {
+        drawMap(cameraX, cameraY);
+      }
+      else {
+        see(cameraX, cameraY, survivor.getX(), survivor.getY());
+        // ledMatrix.setLed(0, survivor.getY() - cameraY - 1, survivor.getX() - cameraX, gameMap[survivor.getY() - 1][survivor.getX()]);
+        // ledMatrix.setLed(0, survivor.getY() - cameraY + 1, survivor.getX() - cameraX, gameMap[survivor.getY() + 1][survivor.getX()]);
+        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX - 1, gameMap[survivor.getY()][survivor.getX() - 1]);
+        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX + 1, gameMap[survivor.getY()][survivor.getX() + 1]);
+      }
     }
     if(survivor.getY() - cameraY < 2 && cameraY > 0) {
       cameraY = survivor.getY() - 2;
+      if(flash) {
+        drawMap(cameraX, cameraY);
+      }
+      else {
+        see(cameraX, cameraY, survivor.getX(), survivor.getY());
+        // ledMatrix.setLed(0, survivor.getY() - cameraY - 1, survivor.getX() - cameraX, gameMap[survivor.getY() - 1][survivor.getX()]);
+        // ledMatrix.setLed(0, survivor.getY() - cameraY + 1, survivor.getX() - cameraX, gameMap[survivor.getY() + 1][survivor.getX()]);
+        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX - 1, gameMap[survivor.getY()][survivor.getX() - 1]);
+        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX + 1, gameMap[survivor.getY()][survivor.getX() + 1]);
+      } 
+    }
+
+    //flash
+    if(buttonPressed) {
+      Serial.println(F("FLASH"));
       drawMap(cameraX, cameraY);
+      flash = true;
+      flashStartTime = millis();
+      buttonPressed = false;
+    }
+    if(flash && millis() - flashStartTime > flashDuration) {
+      flash = false;
+      ledMatrix.clearDisplay(0);
     }
 
     if(survivor.getX() == mapSize - 2 && survivor.getY() == mapSize - 2) {
@@ -569,7 +738,10 @@ void loop() {
 
   }
 
-  if(gameStatus == 2) {
+
+
+  // GAME OVER
+  else if(gameStatus == 2) {
     if(buttonTrigger) {
       gameStatus = 0;
       buttonTrigger = false;
