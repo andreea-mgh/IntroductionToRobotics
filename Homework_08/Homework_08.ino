@@ -55,14 +55,13 @@ int gameStatus = 0;
 // 0 = main menu
 // 1 = game
 // 2 = game over
-// 3 = 
 
 // settings
 int playerBlinkRate = 400;
 int bombBlinkRate = 100;
 
-int flashStartTime = 0;
-int flashDuration = 1500;
+unsigned long flashStartTime = 0;
+const unsigned long flashDuration = 1500;
 bool flash = false;
 
 int cameraX = 0;
@@ -72,9 +71,13 @@ Player survivor(&ledMatrix, 1, 1);
 Monster monsters[10];
 int numMonsters = 0;
 
-
 const int mapSize = 16;
 const int numLevels = 5;
+int currentLevel = 0;
+
+const int winBonus = 1000;
+const int levelCompleteBonus = 100;
+const unsigned long bonusTimeLimit[numLevels] = {60, 90, 120, 180, 240};
 
 
 byte lifeChar[8] = {
@@ -96,6 +99,17 @@ byte timeChar[8] = {
 	0b10111,
 	0b10001,
 	0b01110,
+	0b00000
+};
+
+byte flashChar[8] = {
+	0b00000,
+	0b00000,
+	0b01110,
+	0b10101,
+	0b10101,
+	0b01110,
+	0b00000,
 	0b00000
 };
 
@@ -126,74 +140,74 @@ const byte gameLevels[numLevels][mapSize][mapSize] PROGMEM = {
   },
   {
     { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
     { 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1 },
+    { 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
     { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1 },
-    { 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1 },
+    { 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1 },
+    { 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1 },
+    { 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1 },
+    { 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1 },
+    { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1 },
+    { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1 },
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
+  },
+  {
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1 },
+    { 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1 },
+    { 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1 },
+    { 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1 },
+    { 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1 },
+    { 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1 },
+    { 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
     { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
   },
   {
     { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
     { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1 },
-    { 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1 },
     { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1 },
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1 },
+    { 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1 },
+    { 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
+    { 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1 },
+    { 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
     { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
   },
   {
     { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1 },
-    { 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
-  },
-  {
-    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1 },
-    { 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
+    { 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1 },
+    { 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1 },
+    { 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1 },
+    { 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1 },
+    { 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1 },
+    { 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1 },
+    { 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1 },
+    { 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1 },
+    { 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1 },
+    { 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1 },
+    { 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1 },
     { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
   }
 };
@@ -208,8 +222,13 @@ const uint64_t loseAnimation[] PROGMEM = {
   0x22552a142a552200
 };
 
-// I WILL PUT SOMETHING SMART HERE EVENTUALLY
 void loadLevel(int level = 0) {
+  survivor = Player(&ledMatrix, 2, 2);
+  cameraX = 0;
+  cameraY = 0;
+  flash = false;
+  ledMatrix.clearDisplay(0);
+  lcd.clear();
   if(level < numLevels) {
     for(int i = 0; i < mapSize; i++) {
       for(int j = 0; j < mapSize; j++) {
@@ -217,6 +236,7 @@ void loadLevel(int level = 0) {
       }
     }
   }
+  levelStartTime = millis();
 }
 
 void drawMap(int x, int y) {
@@ -239,9 +259,9 @@ void see(int cameraX, int cameraY, int x, int y) {
       if(x+i >= 0 && x+i < mapSize && y+j >= 0 && y+j < mapSize) {
         ledMatrix.setLed(0, y+j-cameraY, x+i-cameraX, gameMap[y+j][x+i]);
         Serial.print(F("see: "));
-        Serial.print(x+i);
+        Serial.print(x+i-cameraX);
         Serial.print(F(" "));
-        Serial.print(y+j);
+        Serial.print(y+j-cameraY);
         Serial.print(F(" "));
         Serial.print(gameMap[y+j][x+i]);
         Serial.print(F("\n"));
@@ -293,6 +313,7 @@ void setup() {
 
   lcd.createChar(0, lifeChar);
   lcd.createChar(1, timeChar);
+  lcd.createChar(2, flashChar);
 
   randomSeed(analogRead(A5));
 
@@ -300,7 +321,7 @@ void setup() {
   lcd.setCursor(0, 0);
   lcd.print(F("////////////////"));
   lcd.setCursor(0, 1);
-  lcd.print(F("///THE DEEP DARK"));
+  lcd.print(F("///SHADOW ESCAPE"));
   tone(buzzPin, 100);
   delay(100);
   analogWrite(lcd_bl, lcdBrightness);
@@ -315,7 +336,7 @@ void setup() {
   lcd.setCursor(0, 0);
   lcd.print(F("////////////////"));
   lcd.setCursor(0, 1);
-  lcd.print(F("///THE DEEP DARK"));
+  lcd.print(F("///SHADOW ESCAPE"));
   tone(buzzPin, 100);
   delay(200);
 
@@ -329,7 +350,7 @@ void setup() {
   lcd.setCursor(0, 0);
   lcd.print(F("////////////////"));
   lcd.setCursor(0, 1);
-  lcd.print(F("///THE DEEP DARK"));
+  lcd.print(F("///SHADOW ESCAPE"));
   tone(buzzPin, 100);
   delay(400);
 
@@ -353,21 +374,15 @@ void loop() {
     // MAIN MENU
     if(currentMenu == 0) {
       lcd.setCursor(0, 1);
-      lcd.print(F("///THE DEEP DARK"));
+      lcd.print(F("///SHADOW ESCAPE"));
 
       lcd.setCursor(0, 0);
       if(currentOption == 0) {
         lcd.print(F("   START       >"));
         if(buttonTrigger) {
-          lcd.clear();
           gameStatus = 1;
-          survivor = Player(&ledMatrix, 2, 2);
-          loadLevel(0);
-          cameraX = 0;
-          cameraY = 0;
-          ledMatrix.clearDisplay(0);
-          // drawMap(cameraX, cameraY);
-          levelStartTime = millis();
+          currentLevel = 0;
+          loadLevel(currentLevel);
           buttonTrigger = false;
         }
       }
@@ -500,7 +515,7 @@ void loop() {
     else if(currentMenu == 2) {
       if(currentOption == 0) {
         lcd.setCursor(0, 0);
-        lcd.print(F("The Deep Dark  "));
+        lcd.print(F("Shadow Escape  "));
         lcd.setCursor(0, 1);
         lcd.print(F("               "));
       }
@@ -548,24 +563,23 @@ void loop() {
 
   // GAME
   else if(gameStatus == 1) {
+    if(millis() - levelStartTime < 100) tone(buzzPin, 440);
+    else if(millis() - levelStartTime < 400) tone(buzzPin, 587);
+    else noTone(buzzPin);
 
     // player movement
     int xValue = analogRead(pinX);
     int yValue = analogRead(pinY);
+    bool playerMoved = false;
     if (millis() - lastMoveTime > moveDelay) {
       if (xValue < joystickMinThreshold) {
         if (survivor.getX() > 0) {
 
           if (gameMap[survivor.getY()][survivor.getX() - 1] == 0) {
             survivor.moveLeft();
+            playerMoved = true;
             lastMoveTime = millis();
             tone(buzzPin, 100, 50);
-            ledMatrix.clearDisplay(0);
-            see(cameraX, cameraY, survivor.getX(), survivor.getY());
-            lcd.setCursor(0, 1);
-            lcd.print(survivor.getX());
-            lcd.print(F(" "));
-            lcd.print(survivor.getY());
           }
         }
       }
@@ -574,14 +588,9 @@ void loop() {
 
           if (gameMap[survivor.getY()][survivor.getX() + 1] == 0) {
             survivor.moveRight();
+            playerMoved = true;
             lastMoveTime = millis();
             tone(buzzPin, 100, 50);
-            ledMatrix.clearDisplay(0);
-            see(cameraX, cameraY, survivor.getX(), survivor.getY());
-            lcd.setCursor(0, 1);
-            lcd.print(survivor.getX());
-            lcd.print(F(" "));
-            lcd.print(survivor.getY());
           }
         }
       }
@@ -590,14 +599,9 @@ void loop() {
 
           if (gameMap[survivor.getY() - 1][survivor.getX()] == 0) {
             survivor.moveUp();
+            playerMoved = true;
             lastMoveTime = millis();
             tone(buzzPin, 100, 50);
-            ledMatrix.clearDisplay(0);
-            see(cameraX, cameraY, survivor.getX(), survivor.getY());
-            lcd.setCursor(0, 1);
-            lcd.print(survivor.getX());
-            lcd.print(F(" "));
-            lcd.print(survivor.getY());
           }
         }
       }
@@ -606,14 +610,9 @@ void loop() {
 
           if (gameMap[survivor.getY() + 1][survivor.getX()] == 0) {
             survivor.moveDown();
+            playerMoved = true;
             lastMoveTime = millis();
             tone(buzzPin, 100, 50);
-            ledMatrix.clearDisplay(0);
-            see(cameraX, cameraY, survivor.getX(), survivor.getY());
-            lcd.setCursor(0, 1);
-            lcd.print(survivor.getX());
-            lcd.print(F(" "));
-            lcd.print(survivor.getY());
           }
         }
       }
@@ -622,55 +621,52 @@ void loop() {
     // camera movement
     if(survivor.getX() - cameraX > 5 && cameraX < mapSize - matrixSize) {
       cameraX = survivor.getX() - 5;
+      ledMatrix.clearDisplay(0);
       if(flash) {
         drawMap(cameraX, cameraY);
       }
       else {
         see(cameraX, cameraY, survivor.getX(), survivor.getY());
-        // ledMatrix.setLed(0, survivor.getY() - cameraY - 1, survivor.getX() - cameraX, gameMap[survivor.getY() - 1][survivor.getX()]);
-        // ledMatrix.setLed(0, survivor.getY() - cameraY + 1, survivor.getX() - cameraX, gameMap[survivor.getY() + 1][survivor.getX()]);
-        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX - 1, gameMap[survivor.getY()][survivor.getX() - 1]);
-        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX + 1, gameMap[survivor.getY()][survivor.getX() + 1]);
       }
     }
-    if(survivor.getY() - cameraY > 5 && cameraY < mapSize - matrixSize) {
+    else if(survivor.getY() - cameraY > 5 && cameraY < mapSize - matrixSize) {
       cameraY = survivor.getY() - 5;
+      ledMatrix.clearDisplay(0);
       if(flash) {
         drawMap(cameraX, cameraY);
       }
       else {
         see(cameraX, cameraY, survivor.getX(), survivor.getY());
-        // ledMatrix.setLed(0, survivor.getY() - cameraY - 1, survivor.getX() - cameraX, gameMap[survivor.getY() - 1][survivor.getX()]);
-        // ledMatrix.setLed(0, survivor.getY() - cameraY + 1, survivor.getX() - cameraX, gameMap[survivor.getY() + 1][survivor.getX()]);
-        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX - 1, gameMap[survivor.getY()][survivor.getX() - 1]);
-        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX + 1, gameMap[survivor.getY()][survivor.getX() + 1]);
       }
     }
-    if(survivor.getX() - cameraX < 2 && cameraX > 0) {
+    else if(survivor.getX() - cameraX < 2 && cameraX > 0) {
       cameraX = survivor.getX() - 2;
+      ledMatrix.clearDisplay(0);
       if(flash) {
         drawMap(cameraX, cameraY);
       }
       else {
         see(cameraX, cameraY, survivor.getX(), survivor.getY());
-        // ledMatrix.setLed(0, survivor.getY() - cameraY - 1, survivor.getX() - cameraX, gameMap[survivor.getY() - 1][survivor.getX()]);
-        // ledMatrix.setLed(0, survivor.getY() - cameraY + 1, survivor.getX() - cameraX, gameMap[survivor.getY() + 1][survivor.getX()]);
-        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX - 1, gameMap[survivor.getY()][survivor.getX() - 1]);
-        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX + 1, gameMap[survivor.getY()][survivor.getX() + 1]);
       }
     }
-    if(survivor.getY() - cameraY < 2 && cameraY > 0) {
+    else if(survivor.getY() - cameraY < 2 && cameraY > 0) {
       cameraY = survivor.getY() - 2;
+      ledMatrix.clearDisplay(0);
       if(flash) {
         drawMap(cameraX, cameraY);
       }
       else {
         see(cameraX, cameraY, survivor.getX(), survivor.getY());
-        // ledMatrix.setLed(0, survivor.getY() - cameraY - 1, survivor.getX() - cameraX, gameMap[survivor.getY() - 1][survivor.getX()]);
-        // ledMatrix.setLed(0, survivor.getY() - cameraY + 1, survivor.getX() - cameraX, gameMap[survivor.getY() + 1][survivor.getX()]);
-        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX - 1, gameMap[survivor.getY()][survivor.getX() - 1]);
-        // ledMatrix.setLed(0, survivor.getY() - cameraY, survivor.getX() - cameraX + 1, gameMap[survivor.getY()][survivor.getX() + 1]);
       } 
+    }
+    else if(playerMoved) {
+      ledMatrix.clearDisplay(0);
+      if(flash) {
+        drawMap(cameraX, cameraY);
+      }
+      else {
+        see(cameraX, cameraY, survivor.getX(), survivor.getY());
+      }
     }
 
     //flash
@@ -681,22 +677,40 @@ void loop() {
       flashStartTime = millis();
       buttonPressed = false;
     }
-    if(flash && millis() - flashStartTime > flashDuration) {
-      flash = false;
-      ledMatrix.clearDisplay(0);
+    
+    if(flash) {
+      lcd.setCursor(14, 1);
+      lcd.write(byte(2));
+      if(millis() - flashStartTime > flashDuration) {
+        flash = false;
+        ledMatrix.clearDisplay(0);
+      }
+    }
+    else {
+      lcd.setCursor(14, 1);
+      lcd.print(F(" "));
     }
 
+    // win/lose conditions
     if(survivor.getX() == mapSize - 2 && survivor.getY() == mapSize - 2) {
-      gameWon = true;
-      gameStatus = 2;
+      if(currentLevel < numLevels - 1) {
+        currentScore += levelCompleteBonus * (currentLevel + 1);
+        unsigned long timeBonus = millis() - bonusTimeLimit[currentLevel];
+        currentScore += max(0, timeBonus);
+        currentLevel ++;
+        loadLevel(currentLevel);
+      }
+      else {
+        gameStatus = 2;
+        gameWon = true;
+      }
     }
 
     if(survivor.getLives() == 0) {
-      gameWon = false;
       gameStatus = 2;
+      gameWon = false;
     }
     
-
     // draw player
     survivor.draw(playerBlinkRate);
 
@@ -712,20 +726,26 @@ void loop() {
       lcd.setCursor(i, 0);
       lcd.write(byte(0));
     }
+    lcd.setCursor(0, 1);
+    lcd.print(F("LV "));
+    lcd.print(currentLevel + 1);
 
     if(gameStatus == 2) {
       displayImage(matrixImages[0]);
       if(gameWon) {
         lcd.setCursor(0, 0);
-        lcd.print(F("////////////////"));
+        lcd.print(F(" YOU ESCAPED.    "));
         lcd.setCursor(0, 1);
-        lcd.print(F("///  YOU WIN    "));
+        currentScore += winBonus;
+        lcd.print(F("/// SCORE: "));
+        lcd.print(currentScore);
       }
       else {
         lcd.setCursor(0, 0);
-        lcd.print(F("////////////////"));
+        lcd.print(F(" YOU DIED.       "));
         lcd.setCursor(0, 1);
-        lcd.print(F("///  YOU LOSE   "));
+        lcd.print(F("/// SCORE: "));
+        lcd.print(currentScore);
       }
       delay(1000);
       lcd.clear();
