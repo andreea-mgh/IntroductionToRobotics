@@ -55,3 +55,11 @@ This task involves simulating a pseudo-smart system monitor, with an interactive
 For this assignment I made a small version of the Bomberman game with no enemies.
 
 ![picture of setup](/Homework_07/setup.jpg)
+
+# Homework 8
+
+[:page_facing_up: Assignment details](Homework_08/Homework_08.md)
+
+I made a menu for my matrix game using a 16x2 LCD.
+
+![picture of setup](/Homework_08/setup.jpg)
