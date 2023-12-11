@@ -762,9 +762,9 @@ void loop() {
 
   // GAME OVER
   else if(gameStatus == 2) {
-    if(buttonTrigger) {
+    if(buttonPressed) {
       gameStatus = 0;
-      buttonTrigger = false;
+      buttonPressed = false;
     }
   }
 
