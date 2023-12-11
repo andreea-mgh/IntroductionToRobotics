@@ -240,11 +240,6 @@ void loadLevel(int level = 0) {
 }
 
 void drawMap(int x, int y) {
-  Serial.print(F("drawMap: "));
-  Serial.print(x);
-  Serial.print(F(" "));
-  Serial.print(y);
-  Serial.print(F("\n"));
   ledMatrix.clearDisplay(0);
   for (int i = y; i < y + matrixSize; i++) {
     for (int j = x; j < x + matrixSize; j++) {
@@ -258,13 +253,6 @@ void see(int cameraX, int cameraY, int x, int y) {
     for(int j=-1; j<=1; j++) {
       if(x+i >= 0 && x+i < mapSize && y+j >= 0 && y+j < mapSize) {
         ledMatrix.setLed(0, y+j-cameraY, x+i-cameraX, gameMap[y+j][x+i]);
-        Serial.print(F("see: "));
-        Serial.print(x+i-cameraX);
-        Serial.print(F(" "));
-        Serial.print(y+j-cameraY);
-        Serial.print(F(" "));
-        Serial.print(gameMap[y+j][x+i]);
-        Serial.print(F("\n"));
       }
     }
   }
@@ -679,7 +667,7 @@ void loop() {
     }
     
     if(flash) {
-      lcd.setCursor(14, 1);
+      lcd.setCursor(0, 1);
       lcd.write(byte(2));
       if(millis() - flashStartTime > flashDuration) {
         flash = false;
@@ -687,7 +675,7 @@ void loop() {
       }
     }
     else {
-      lcd.setCursor(14, 1);
+      lcd.setCursor(0, 1);
       lcd.print(F(" "));
     }
 
@@ -695,8 +683,14 @@ void loop() {
     if(survivor.getX() == mapSize - 2 && survivor.getY() == mapSize - 2) {
       if(currentLevel < numLevels - 1) {
         currentScore += levelCompleteBonus * (currentLevel + 1);
-        unsigned long timeBonus = millis() - bonusTimeLimit[currentLevel];
-        currentScore += max(0, timeBonus);
+        // Serial.print(F("Level bonus: "));
+        // Serial.println(levelCompleteBonus * (currentLevel + 1));
+        if((millis() - levelStartTime) / 1000 < bonusTimeLimit[currentLevel]) {
+          unsigned long timeBonus = bonusTimeLimit[currentLevel] - (millis() - levelStartTime) / 1000;
+          currentScore += timeBonus;
+          // Serial.print(F("Time bonus: "));
+          // Serial.println(timeBonus);
+        }
         currentLevel ++;
         loadLevel(currentLevel);
       }
@@ -726,9 +720,11 @@ void loop() {
       lcd.setCursor(i, 0);
       lcd.write(byte(0));
     }
-    lcd.setCursor(0, 1);
+    lcd.setCursor(2, 1);
     lcd.print(F("LV "));
     lcd.print(currentLevel + 1);
+    lcd.setCursor(7, 1);
+    lcd.print(currentScore);
 
     if(gameStatus == 2) {
       displayImage(matrixImages[0]);
